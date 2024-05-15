@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class EazyBankUsernamePwdAuthProvider implements AuthenticationProvider {
@@ -32,7 +33,8 @@ public class EazyBankUsernamePwdAuthProvider implements AuthenticationProvider {
 
         return customerRepository.findByEmail(username).map(customer -> {
             if (passwordEncoder.matches(password, customer.getPwd())) {
-                return new UsernamePasswordAuthenticationToken(username, password, List.of(new SimpleGrantedAuthority(customer.getRole())));
+                var authorities = customer.getAuthorities().stream().map(auth -> new SimpleGrantedAuthority(auth.getName())).toList();
+                return new UsernamePasswordAuthenticationToken(username, password, authorities);
             } else {
                 throw new BadCredentialsException("Invalid password");
             }

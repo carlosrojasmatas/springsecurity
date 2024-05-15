@@ -1,41 +1,82 @@
 package com.sszm.config;
 
+import com.sszm.filter.CsrfCookieFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.web.cors.CorsConfiguration;
 
-import javax.sql.DataSource;
+import java.util.Collections;
+import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class SecurityConfig {
+
+    private String[] securedEndpoints = {
+            "/v1/accounts/myAccount",
+            "/v1/balances/myBalance",
+            "/v1/loans/myLoans",
+            "/v1/cards/myCards",
+            "/v1/user/details"
+    };
+
+    private String[] openEndpoints = {
+            "/v1/notices",
+            "/v1/contact/save",
+            "/v1/user/signup",
+    };
+
+    private String[] allowedDomains={
+            "http://localhost:4200"
+    };
+
+
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        //basic matchers
         http.authorizeHttpRequests((requests) ->
                 requests
-                        .requestMatchers("/v1/accounts/myAccount", "/v1/balances/myBalance", "/v1/loans/myLoans", "/v1/cards/myCards")
-                        .authenticated()
-                        .requestMatchers("/v1/notices/myNotices", "/v1/contact/details","/v1/registration")
-                        .permitAll()
+                        .requestMatchers(securedEndpoints).authenticated()
+                        .requestMatchers(openEndpoints).permitAll()
         );
-        http.csrf(CsrfConfigurer::disable);
+        //session management
+        http.securityContext(ctx ->
+                ctx.requireExplicitSave(false));
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
+        //csrf
+        var csrfAttributeHandler = new CsrfTokenRequestAttributeHandler();
+        csrfAttributeHandler.setCsrfRequestAttributeName("_csrf");
+        http.csrf(config -> config.ignoringRequestMatchers(openEndpoints).csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
+//        http.csrf(config -> config.disable());
+        http.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+        http.cors((cors) -> cors.configurationSource(request -> {
+            var corsConfig = new CorsConfiguration();
+            corsConfig.setAllowCredentials(true);
+            corsConfig.setAllowedHeaders(Collections.singletonList("*"));
+            corsConfig.setAllowedMethods(Collections.singletonList("*"));
+            corsConfig.setMaxAge(3600L);
+            corsConfig.setAllowedOrigins(List.of(allowedDomains));
+            return corsConfig;
+        }));
         http.formLogin(withDefaults());
         http.httpBasic(withDefaults());
         return http.build();
     }
 
 
-    public UserDetailsService jdbcUserDetailsManager(DataSource dataSource) {
-        return new JdbcUserDetailsManager(dataSource);
-    }
+//    public UserDetailsService jdbcUserDetailsManager(DataSource dataSource) {
+//        return new JdbcUserDetailsManager(dataSource);
+//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
