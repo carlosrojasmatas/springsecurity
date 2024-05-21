@@ -46,7 +46,15 @@ public class SecurityConfig {
         //basic matchers
         http.authorizeHttpRequests((requests) ->
                 requests
-                        .requestMatchers(securedEndpoints).authenticated()
+//                        .requestMatchers("/v1/accounts/myAccount").hasAuthority("VIEWACCOUNT")
+//                        .requestMatchers("/v1/balances/myBalance").hasAnyAuthority("VIEWACCOUNT","VIEWBALANCE")
+//                        .requestMatchers("/v1/loans/myLoans").hasAuthority("VIEWLOANS")
+//                        .requestMatchers("/v1/cards/myCards").hasAuthority("VIEWCARDS")
+                        .requestMatchers("/v1/accounts/myAccount").hasRole("USER")
+                        .requestMatchers("/v1/balances/myBalance").hasAnyRole("ADMIN","USER")
+                        .requestMatchers("/v1/loans/myLoans").hasRole("USER")
+                        .requestMatchers("/v1/cards/myCards").hasRole("USER")
+                        .requestMatchers("/v1/user/details").authenticated()
                         .requestMatchers(openEndpoints).permitAll()
         );
         //session management

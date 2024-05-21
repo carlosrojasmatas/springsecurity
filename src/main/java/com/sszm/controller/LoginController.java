@@ -27,7 +27,7 @@ public class LoginController {
         if(Objects.isNull(authentication)){
             return ResponseEntity.ok(new Customer());
         }
-        return customerRepository.findByEmail(authentication.getName()).map(c -> ResponseEntity.ok(c)).orElse(ResponseEntity.notFound().build());
+        return customerRepository.findByEmail(authentication.getName()).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("signup")

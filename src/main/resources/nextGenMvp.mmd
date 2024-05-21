@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant AccountC
+    participant Google Auth Provider
+    participant Account Lifecycle Service
+    participant Account Repository Service
+    participant Account DB
+    participant Ping Federate
+    Client ->> Account Lifecycle Service: createAccount
+    Account Lifecycle Service ->> Auth Provider: authenticateUser
+    Google Auth Provider ->> Account Lifecycle Service: userAuthenticated

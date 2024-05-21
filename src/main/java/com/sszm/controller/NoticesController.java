@@ -29,13 +29,7 @@ public class NoticesController {
 
 
     @GetMapping("") // Base path for all endpoints
-    public ResponseEntity<List<?>> getNotices(@RequestParam String cust) {
-        if(cust.equals("customer")){
-            var customer = customerRepository
-                    .findById(UUID.fromString("03f0f5e4-283e-4b58-a6a8-32a0f5a6c6e5")).get();
-            customer.getAuthorities();
-            return ResponseEntity.ok().body(List.of(customer));
-        }
+    public ResponseEntity<List<?>> getNotices() {
         var notices = noticeRepository.findAllActiveNotices();
         if (!notices.isEmpty()) {
             return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
