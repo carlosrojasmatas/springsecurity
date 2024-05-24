@@ -1,6 +1,9 @@
 package com.sszm.config;
 
+import com.sszm.filter.AuthorizationProgressLoggingFilter;
 import com.sszm.filter.CsrfCookieFilter;
+import com.sszm.filter.AuthoritiesLoggingFilter;
+import com.sszm.filter.UsernameWithTestValidationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,7 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 
@@ -67,6 +69,9 @@ public class SecurityConfig {
         http.csrf(config -> config.ignoringRequestMatchers(openEndpoints).csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
 //        http.csrf(config -> config.disable());
         http.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+        http.addFilterBefore(new UsernameWithTestValidationFilter(), BasicAuthenticationFilter.class);
+        http.addFilterAt(new AuthorizationProgressLoggingFilter(),BasicAuthenticationFilter.class);
+        http.addFilterAfter(new AuthoritiesLoggingFilter(),BasicAuthenticationFilter.class);
         http.cors((cors) -> cors.configurationSource(request -> {
             var corsConfig = new CorsConfiguration();
             corsConfig.setAllowCredentials(true);
