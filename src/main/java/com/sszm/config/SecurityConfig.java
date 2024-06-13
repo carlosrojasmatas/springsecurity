@@ -1,9 +1,6 @@
 package com.sszm.config;
 
-import com.sszm.filter.AuthorizationProgressLoggingFilter;
-import com.sszm.filter.CsrfCookieFilter;
-import com.sszm.filter.AuthoritiesLoggingFilter;
-import com.sszm.filter.UsernameWithTestValidationFilter;
+import com.sszm.filter.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -60,23 +57,27 @@ public class SecurityConfig {
                         .requestMatchers(openEndpoints).permitAll()
         );
         //session management
-        http.securityContext(ctx ->
-                ctx.requireExplicitSave(false));
-        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
+        http.sessionManagement(sessionCustomizer-> sessionCustomizer.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+//        http.securityContext(ctx ->
+//                ctx.requireExplicitSave(false));
+//        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
         //csrf
         var csrfAttributeHandler = new CsrfTokenRequestAttributeHandler();
         csrfAttributeHandler.setCsrfRequestAttributeName("_csrf");
         http.csrf(config -> config.ignoringRequestMatchers(openEndpoints).csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
 //        http.csrf(config -> config.disable());
+        http.addFilterBefore(new JWTTokenValidationFilter(), BasicAuthenticationFilter.class);
         http.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
-        http.addFilterBefore(new UsernameWithTestValidationFilter(), BasicAuthenticationFilter.class);
-        http.addFilterAt(new AuthorizationProgressLoggingFilter(),BasicAuthenticationFilter.class);
-        http.addFilterAfter(new AuthoritiesLoggingFilter(),BasicAuthenticationFilter.class);
+        http.addFilterAfter(new JWTGeneratorFilter(),BasicAuthenticationFilter.class);
+//        http.addFilterBefore(new UsernameWithTestValidationFilter(), BasicAuthenticationFilter.class);
+//        http.addFilterAt(new AuthorizationProgressLoggingFilter(),BasicAuthenticationFilter.class);
+//        http.addFilterAfter(new AuthoritiesLoggingFilter(),BasicAuthenticationFilter.class);
         http.cors((cors) -> cors.configurationSource(request -> {
             var corsConfig = new CorsConfiguration();
             corsConfig.setAllowCredentials(true);
             corsConfig.setAllowedHeaders(Collections.singletonList("*"));
             corsConfig.setAllowedMethods(Collections.singletonList("*"));
+            corsConfig.setExposedHeaders(Collections.singletonList("Authorization"));
             corsConfig.setMaxAge(3600L);
             corsConfig.setAllowedOrigins(List.of(allowedDomains));
             return corsConfig;
